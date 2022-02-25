@@ -8,11 +8,15 @@ raw_img_dir = "./results/raw"
 cropped_img_dir = "./results/crop"
 
 alphabet = ' "%&\'()+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZ[]abcdefghijklmnopqrstuvwxyzÀÁÂÃÉÊÌÍÒÓÔÙÚÝàáâãèéêìíòóôõùúýĂăĐđĩŨũƠơƯưẠạẢảẤấẦầẨẩẫẬậẮắẰằẳẶặẹẺẻẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỶỷỸỹ'
-node_labels = ['OTHER', 'ADDRESS', 'SELLER', 'TIMESTAMP', 'TOTAL_COST']
+# node_labels = ['OTHER', 'ADDRESS', 'SELLER', 'TIMESTAMP', 'TOTAL_COST']
+node_labels = ['TITILE', 'HEADER', 'PARA', 'OTHER', 'TOTAL_COST']
+
 
 text_detection_weights_path = "./weights/text_detect/craft_mlt_25k_1.pth"
 saliency_weight_path = "./weights/saliency/u2netp.pth"
-kie_weight_path = "./weights/kie/kie_mcocr.pkl"
+# kie_weight_path = "./weights/kie/kie_mcocr.pkl"
+kie_weight_path = "best_1.pkl"
+
 
 saliency_ths = 0.5
 score_ths = 0.82

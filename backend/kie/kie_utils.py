@@ -68,30 +68,45 @@ def prepare_data(cells, text_key="vietocr_text"):
         polys.append(poly)
 
     texts = np.array(texts, dtype=object)
+    # print('TEXTS: ', texts)
     text_lengths = np.array(text_lengths)
     polys = np.array(polys)
     return texts, text_lengths, polys
 
 
 def prepare_pipeline(boxes, edge_data, text, text_length):
+    # print('TEXTS: ', text)
+    # print('TEXT_LENGTHS: ', text_length)
+    # print('BOXES: ', boxes)
+    # print('LEN BOXES: ', len(boxes))
+    # print('EDGE_DATA: ', edge_data)
     box_min = boxes.min(0)
     box_max = boxes.max(0)
 
     boxes = (boxes - box_min) / (box_max - box_min)
     boxes = (boxes - 0.5) / 0.5
 
+    # if edge_data.shape[0]:
     edge_min = edge_data.min(0)
     edge_max = edge_data.max(0)
 
     edge_data = (edge_data - edge_min) / (edge_max - edge_min)
     edge_data = (edge_data - 0.5) / 0.5
-
+    # else:
+    #     edge_data = np.array([[0., 0.]])
     return boxes, edge_data, text, text_length
 
 
 @timer
 def prepare_graph(cells):
+
+    # print('CELLS: ', cells)
+
     texts, text_lengths, boxes = prepare_data(cells)
+
+    # print('TEXTS: ', texts)
+    # print('TEXT_LENGTHS: ', text_lengths)
+    # print('BOXES: ', boxes)
 
     origin_boxes = boxes.copy()
     node_nums = text_lengths.shape[0]
@@ -119,6 +134,10 @@ def prepare_graph(cells):
             edge_data.append(edata)
             src.append(i)
             dst.append(j)
+
+    # print('SRC: ', src)
+    # print('DST: ', dst)
+    # print('EDGE_DATA: ', edge_data)
 
     edge_data = np.array(edge_data)
     g = dgl.DGLGraph()
@@ -182,6 +201,19 @@ def run_predict(gcn_net, merged_cells, device="cpu"):
         graph_edge_size,
     ) = prepare_graph(merged_cells)
 
+    # print('DETAIL: ',
+    #     batch_graphs,
+    #     batch_x,
+    #     batch_e,
+    #     batch_snorm_n,
+    #     batch_snorm_e,
+    #     text,
+    #     text_length,
+    #     boxes,
+    #     graph_node_size,
+    #     graph_edge_size,
+    # )
+
     batch_graphs = batch_graphs.to(device)
     batch_x = batch_x.to(device)
     batch_e = batch_e.to(device)
@@ -192,6 +224,8 @@ def run_predict(gcn_net, merged_cells, device="cpu"):
     batch_snorm_n = batch_snorm_n.to(device)
 
     batch_graphs = batch_graphs.to(device)
+    # print('GRAPH NOTE SIZE: ', graph_node_size)
+    # print('GRAPH EDGE SIZE: ', graph_edge_size)
     batch_scores = gcn_net.forward(
         batch_graphs,
         batch_x,
@@ -203,6 +237,9 @@ def run_predict(gcn_net, merged_cells, device="cpu"):
         graph_node_size,
         graph_edge_size,
     )
+
+    # print('BATCH_SCORES: ', batch_scores)
+    # print('BOXES: ', boxes)
     return batch_scores, boxes
 
 

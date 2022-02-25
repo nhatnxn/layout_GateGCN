@@ -37,6 +37,7 @@ def load_model():
 
     return gcn_net, detector
 
+# print('='*30)
 
 gcn_net, detector = load_model()
 
@@ -44,6 +45,7 @@ gcn_net, detector = load_model()
 def infer(img_fp, save_dir):
 
     json_res = json.loads(get_request_api(img_fp))
+    # print('JSON_RES: ',json_res)
     api_runtime = json_res["api_runtime"]
     api_random_id = json_res["random_id"]
 
@@ -53,17 +55,23 @@ def infer(img_fp, save_dir):
     img = np.array(pil_img)
 
     cells = json_res["cells"]
+    print('CELLs: ', cells)
     group_ids = np.array([i["group_id"] for i in json_res["cells"]])
     # merge adjacent text-boxes
     merged_cells = create_merge_cells(
         detector, img, cells, group_ids, merge_text=cf.merge_text
     )
+
+    print('MERGED CELLs: ', merged_cells)
+    print('GCN_NET: ', gcn_net)
     batch_scores, boxes = run_predict(gcn_net, merged_cells, device=cf.device)
 
-    # 2 options: get max score or filter categories by threshold
+    # 2 options: get max score or filter categories by threshold``
     values, preds = postprocess_scores(
         batch_scores, score_ths=cf.score_ths, get_max=cf.get_max
     )
+    print('VALUE: ', values)
+    print('PREDS: ', preds)
     kie_info = postprocess_write_info(merged_cells, preds)
 
     delta_time = time.time() - start
@@ -152,6 +160,7 @@ def main():
                     vis_img, kie_info, total_runtime = infer(
                         test_img_fp, cf.result_img_dir
                     )
+                    
                     wait_text.empty()
 
                     with col1:

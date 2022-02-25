@@ -34,11 +34,13 @@ def infer(img, random_id):
     imageio.imwrite(os.path.join(cf.raw_img_dir, "{}.jpg".format(random_id)), img)
 
     # SALIENCY PREDICTION
-    mask_img = run_saliency(net, img)
-    img[~mask_img.astype(bool)] = 0.0
+    # mask_img = run_saliency(net, img)
+    # img[~mask_img.astype(bool)] = 0.0
 
     # TRANSFORM AND WRAP IMAGE
-    warped_img = make_warp_img(img, mask_img)
+    # warped_img = make_warp_img(img, mask_img)
+    warped_img = img
+
     sub_img_fp = os.path.join(cf.cropped_img_dir, "{}.jpg".format(random_id))
     imageio.imwrite(sub_img_fp, warped_img)
 

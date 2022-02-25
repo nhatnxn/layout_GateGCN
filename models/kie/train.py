@@ -1,12 +1,19 @@
-from traceback import print_tb
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import LSTM
 from torch.nn.utils.rnn import pack_padded_sequence
 
-import numpy as np
+import os
+import sys
+import inspect
 
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+parentdir = os.path.dirname(parentdir)
+sys.path.insert(0, parentdir) 
+
+import numpy as np
 
 from models.kie.graph_norm import GraphNorm
 
@@ -90,7 +97,6 @@ class GatedGCNLayer(nn.Module):
         h_in = h  # for residual connection
         e_in = e  # for residual connection
 
-        # print('H: ',h)
         g.ndata["h"] = h
         g.ndata["Ah"] = self.A(h)
         g.ndata["Bh"] = self.B(h)
@@ -106,8 +112,6 @@ class GatedGCNLayer(nn.Module):
             h = h * snorm_n  # normalize activation w.r.t. graph size
             e = e * snorm_e  # normalize activation w.r.t. graph size
 
-        # print('GRAPH_NODE_SIZE: ', graph_node_size)
-
         if self.batch_norm:
             h = self.bn_node_h(h, graph_node_size)  # graph normalization
             e = self.bn_node_e(e, graph_edge_size)  # graph normalization
@@ -122,8 +126,6 @@ class GatedGCNLayer(nn.Module):
         h = F.dropout(h, self.dropout, training=self.training)
         e = F.dropout(e, self.dropout, training=self.training)
 
-        # print('H: ', h)
-        # print('E: ', e)
         return h, e
 
     def __repr__(self):
@@ -239,22 +241,10 @@ class GatedGCNNet(nn.Module):
         graph_edge_size,
     ):
         # input embedding
-        snorm_e = snorm_e.to(self.device)
-        snorm_n = snorm_n.to(self.device)
-        g = g.to(self.device)
-        h = h.to(self.device)
-        e = e.to(self.device)
-        text = text.to(self.device)
-        # print('H: ', h)
-        # print('H SHAPE: ', h.shape)
-        # print('DEVICE: ', self.device)
         h_embeding = self.embedding_h(h)
         e_embeding = self.embedding_e(e)
 
         # FIXED
-        # print('TEXT: ', text)
-        # print('TEXT SHAPE: ', text)
-        # print('TEXT_LENGTH: ', text_length)
         text_embeding = self.embedding_text(text.long())
         text_embeding = self.lstm_text_embeding(text_embeding, text_length)
 
@@ -270,9 +260,7 @@ class GatedGCNNet(nn.Module):
 
         # output
         h_out = self.MLP_layer(h)
-        # print('OUTPUT: ', h_out)
-        # print('TEXT LENGHT: ', text_length.shape)
-        # print('OUTPUT SHAPE: ', h_out.shape)
+
         return h_out
 
     def _ohem(self, pred, label):
@@ -285,8 +273,6 @@ class GatedGCNNet(nn.Module):
 
         pred_value = pred[:, 1:].max(1)
 
-        # print('PRED_VALUE: ', pred_value.shape )
-        # print('LABLE: ', label.shape)
         neg_score_sorted = np.sort(-pred_value[label == 0])
 
         if neg_score_sorted.shape[0] > neg_num:
@@ -297,18 +283,13 @@ class GatedGCNNet(nn.Module):
         return torch.from_numpy(mask)
 
     def loss(self, pred, label):
-        # label = label.to(self.device)
+
         mask_label = label.clone()
         mask = self._ohem(pred, label)
         mask = mask.to(pred.device)
         mask_label[mask == False] = -100
-        # print('MASK_LABEL: ', mask_label)
-        # print('MASK LABEL SHAPE: ', mask_label.shape)
-        # print('PRED: ', pred)
-        # print('PRED SHAPE: ', pred.shape)
-        # loss = self.criterion(pred, mask_label)
-        loss = nn.CrossEntropyLoss(ignore_index=-100)(pred, mask_label)
-        # print('LOSS: ', loss)
+        loss = self.criterion(pred, mask_label)
+
         # calculating label weights for weighted loss computation
         # V = label.size(0)
         # label_count = torch.bincount(label)
@@ -323,16 +304,26 @@ class GatedGCNNet(nn.Module):
         # loss = criterion(pred, label)
 
         return loss
-    
-    def accuracy(self, scores, targets):
-        scores = scores.detach().argmax(dim=1)
-        acc = (scores==targets).float().sum().item()
-        return acc
 
 
 if __name__ == "__main__":
 
-    net_params = {}
+    net_params = {}    
+    net_params["in_dim_text"] = len(' "%&\'()+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZ[]abcdefghijklmnopqrstuvwxyzÀÁÂÃÉÊÌÍÒÓÔÙÚÝàáâãèéêìíòóôõùúýĂăĐđĩŨũƠơƯưẠạẢảẤấẦầẨẩẫẬậẮắẰằẳẶặẹẺẻẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỶỷỸỹ')
+    net_params["in_dim_node"] = 10
+    net_params["in_dim_edge"] = 2
+    net_params["hidden_dim"] = 512
+    net_params["out_dim"] = 384
+    net_params["n_classes"] = 5
+    net_params["in_feat_dropout"] = 0.1
+    net_params["dropout"] = 0.0
+    net_params["L"] = 4
+    net_params["readout"] = True
+    net_params["graph_norm"] = True
+    net_params["batch_norm"] = True
+    net_params["residual"] = True
+    net_params["device"] = "cuda"
+    net_params["OHEM"] = 3
     net_params["in_dim"] = 1
     net_params["hidden_dim"] = 256
     net_params["out_dim"] = 256

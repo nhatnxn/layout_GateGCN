@@ -11,6 +11,7 @@ from backend.saliency.data_loader import SalObjDataset, RescaleT, ToTensorLab, n
 
 @timer
 def run_saliency(net, img):
+    print('NET:', net)
     test_salobj_dataset = SalObjDataset(
         img_name_list=[img],
         lbl_name_list=[],
@@ -18,6 +19,7 @@ def run_saliency(net, img):
     )
 
     data_test = test_salobj_dataset[0]
+    print('DATA_TEST: ', data_test)
     inputs_test = data_test["image"]
     if len(inputs_test.shape) == 3:
         inputs_test = inputs_test.unsqueeze(0)
